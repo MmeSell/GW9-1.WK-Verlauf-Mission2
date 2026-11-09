@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mission 2 · Ein Krieg an vielen Fronten</title>
+<style>
+:root{color-scheme:light;--ink:#182c34;--muted:#48606a;--paper:#f3f5f1;--white:#fff;--line:#c6d3d2;--accent:#075d58;--mint:#e1f2eb;--bad:#862b22;--rose:#fff0ed;font:16px/1.35 system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink)}
+button{font:inherit;color:inherit;touch-action:manipulation;cursor:pointer;min-height:44px;border:1px solid var(--line);border-radius:8px;background:var(--white);padding:8px 12px}
+button:focus-visible{outline:3px solid #225eb4;outline-offset:2px}
+button:disabled{cursor:default;color:var(--muted);background:#e8eeeb}
+[hidden]{display:none!important}
+main{max-width:1220px;margin:auto;padding:20px 24px}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.kicker{font-size:.76rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin:0 0 3px}
+h1{font-size:clamp(1.55rem,3.2vw,2.35rem);line-height:1.07;letter-spacing:-.03em;margin:0}
+h2{font-size:1.08rem;margin:0}
+.lead{margin:9px 0 14px;color:var(--muted)}
+.toolbar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;justify-content:space-between;padding:8px 12px;background:#e7eeea;border-radius:10px;margin-bottom:12px;min-height:60px}
+#status{margin:0;font-weight:650}
+.primary{background:var(--accent);border-color:var(--accent);color:white;font-weight:750}
+.workspace{display:grid;grid-template-columns:minmax(0,2.7fr) minmax(220px,1fr);gap:12px;align-items:start}
+.board{width:100%;table-layout:fixed;border-spacing:0;border-collapse:separate;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--white)}
+th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+tr>*:last-child{border-right:0}
+tbody tr:last-child>*{border-bottom:0}
+thead th{background:#193b43;color:white;font-weight:750;padding:10px 8px;vertical-align:middle;font-size:.87rem}
+.period{width:72px}
+tbody th{background:#e8efeb;padding:9px 7px;white-space:nowrap}
+td{padding:5px;background:#fafcfb}
+.target{width:100%;padding:5px;line-height:1.12;font-weight:650;color:var(--muted);border-style:dashed;background:#f4f7f5}
+.target:disabled{opacity:.85}
+.target:not(:disabled){background:var(--mint);border:1px solid var(--accent);color:var(--accent)}
+.cards{display:grid;gap:5px}
+.cards:not(:empty){margin-top:5px}
+.card{display:block;width:100%;text-align:left;padding:7px 8px;line-height:1.28;overflow-wrap:anywhere}
+.card[aria-pressed=true]{border:2px solid var(--accent);background:var(--mint);padding:6px 7px}
+.card.wrong{background:var(--rose);border-color:var(--bad)}
+.card.wrong{scroll-margin-block:92px 14px}
+.badge{display:block;color:var(--bad);font-size:.75rem;font-weight:800;margin-bottom:3px}
+.deck{position:sticky;top:84px;border:1px solid var(--line);border-radius:10px;padding:10px;background:#e8efeb;min-width:0}
+.deck-head{display:flex;align-items:baseline;justify-content:space-between;gap:4px;margin-bottom:6px}
+.deck-head span{font-size:.78rem;color:var(--muted)}
+.deck-list{overflow:auto;max-height:min(57vh,510px);padding:4px;display:grid;gap:6px;overscroll-behavior:contain}
+.deck .card{padding:10px;min-height:52px}
+.deck .card[aria-pressed=true]{padding:9px}
+.deck p{margin:4px}
+dialog{width:min(720px,92vw);max-height:85vh;border:1px solid var(--line);border-radius:12px;color:var(--ink);padding:0 20px 20px}
+dialog::backdrop{background:#13292dcc}
+dialog header{position:sticky;top:0;background:white;padding:12px 0;border-bottom:1px solid var(--line)}
+details{border-bottom:1px solid var(--line);padding:8px 0}
+summary{min-height:44px;padding:10px 2px;font-weight:750;cursor:pointer}
+dialog p{margin:8px 0}
+#capture{background:white;border:1px solid var(--line);border-radius:12px;padding:14px 20px}
+#capture .lead{margin-bottom:12px}
+#capture .period{width:82px}
+#capture th{font-size:1rem;padding:8px 9px}
+#capture td{padding:5px 10px}
+.result-card{font-size:17px;line-height:1.28;margin:0}
+.result-card+.result-card{border-top:1px solid var(--line);padding-top:6px;margin-top:6px}
+.empty{color:#5a737a}
+.after{margin:14px 0 0;color:var(--muted)}
+.after button{margin:8px 6px 0 0}
+@media(max-width:750px){main{padding:14px 10px}.workspace{grid-template-columns:1fr}.deck{position:static;grid-row:1}.deck-list{max-height:185px}.period,#capture .period{width:61px}.result-card{font-size:15px}#capture{padding:12px 8px}#capture td,#capture th{padding:6px 4px}}
+/* Arbeitsführung oberhalb der Zuordnung */
+.work-steps{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:12px;margin:0 0 12px}
+.work-step{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--white)}
+.work-step:first-child{background:var(--mint);border-left:4px solid var(--accent)}
+.work-step:first-child h2{color:var(--accent)}
+.work-step p{margin:4px 0 0;color:var(--ink)}
+.work-step button{margin-top:8px}
+@media(max-width:650px){.work-steps{grid-template-columns:1fr;gap:8px}}
+
+/* Visuelle Gestaltung nach den illustrierten Vorlagen zu Mission 2 */
+:root{
+  --ink:#172739;--muted:#43536a;--paper:#e1e6eb;--white:#fffaf0;
+  --line:#aeb9c3;--accent:#203f5f;--mint:#deebf6;
+  --bad:#882e27;--rose:#f9e3dc;--navy:#142b41;--sand:#f4e4c9;
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence baseFrequency='.48' numOctaves='3' seed='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath d='M0 0h160v160H0z' filter='url(%23g)' opacity='.13'/%3E%3C/svg%3E");
+}
+body{
+  background-color:var(--paper);
+  background-image:var(--grain),radial-gradient(ellipse at 88% 0%,#c2d1df,transparent 65%),radial-gradient(ellipse at 0% 80%,#e8d9c1,transparent 70%);
+}
+#work > header{
+  background:var(--navy) url("Mission_2_Kopfillustration.svg") right center / auto 100% no-repeat;
+  color:#fff8e9;padding:6px 14px;border-radius:8px;
+  box-shadow:inset 0 -2px #b39461,0 2px 7px #142b4126;
+}
+#work > header .kicker{color:#f1d7a7}
+h1{font-family:Georgia,"Times New Roman",serif;letter-spacing:-.02em}
+.work-step{
+  border-color:#b7a78d;background-color:#faf1e0;
+  background-image:var(--grain),linear-gradient(115deg,#fff9ee,#f1e3cc);
+  box-shadow:0 2px 5px #26394e15;
+}
+.work-step:first-child{
+  border-left-color:var(--accent);background-color:var(--sand);
+  background-image:var(--grain),linear-gradient(105deg,#f9edda,#f1dfbd);
+}
+.toolbar,.deck{background:#dce5ed}
+.toolbar{box-shadow:0 1px 4px #142b4122}
+.board,.deck{box-shadow:0 2px 6px #142b411a}
+thead th{background:var(--navy);color:#fff8e9}
+tbody th{background:#e5ecf1}
+td{background:#fdf9f1}
+button{background:var(--white)}
+button:disabled{background:#e9e5dc}
+button:focus-visible{outline-color:#245a91}
+.primary{background:var(--accent);color:#fffaf1}
+.target{background:#f5eee1}
+.target:disabled{background:#f5eee1}
+.target:not(:disabled),.card[aria-pressed=true]{background:var(--mint)}
+.card{box-shadow:0 1px 2px #142b4112}
+.card.wrong[aria-pressed=true]{box-shadow:inset 0 0 0 1px var(--bad)}
+dialog,dialog header{background:#fffbf2}
+dialog h2{color:var(--navy)}
+dialog::backdrop{background:#14273bcb}
+#capture{
+  background:#fff8ec;
+  box-shadow:inset 0 3px #ac8954,0 2px 6px #142b411a;
+}
+#capture td{background:#fffdf8}
+.empty{color:var(--muted)}
+@media(max-width:720px){#work > header{background-image:none}}
+
+/* Illustration nur hinter der Arbeitsansicht */
+body:has(#work:not([hidden])){
+  background-image:
+    linear-gradient(180deg,#e1e6eb00 65px,#e1e6ebdc 99px,#e1e6ebdc 116px,#e1e6eb00 145px),
+    linear-gradient(90deg,#e1e6eb38,#e1e6ebd6 26%,#e1e6ebe0 64%,#e1e6eb38),
+    url("Mission_2_Hintergrund.jpg");
+  background-position:center top;
+  background-size:100% 100%,100% 100%,max(100%, 840px) auto;
+  background-repeat:no-repeat;
+}
+</style>
+</head>
+<body>
+<main>
+<section id="work" aria-labelledby="title">
+<header>
+<div><p class="kicker">GW 9 · Mission 2</p><h1 id="title">Ein Krieg an vielen Fronten</h1></div>
+</header>
+<p class="lead">Wie entwickelte sich der Erste Weltkrieg?</p>
+<div class="work-steps">
+  <section class="work-step" aria-labelledby="step-1">
+    <h2 id="step-1">Schritt 1: Lies zuerst die Informationstexte.</h2>
+    <p>In den vier Texten erfährst du, wie sich der Erste Weltkrieg von 1914 bis 1918 entwickelte. Du brauchst diese Informationen, um die Ereigniskarten richtig einzuordnen.</p>
+    <button id="info-open" class="primary" type="button">Informationstexte öffnen</button>
+  </section>
+  <section class="work-step" aria-labelledby="step-2">
+    <h2 id="step-2">Schritt 2: Ordne die Ereigniskarten zu.</h2>
+    <p>Tippe eine Ereigniskarte an und anschließend das passende Tabellenfeld.</p>
+  </section>
+</div>
+<div class="toolbar"><p id="status" role="status" aria-live="polite"></p><button id="check" class="primary" type="button" disabled>Überprüfen</button></div>
+<div class="workspace">
+<div id="board"></div>
+<aside class="deck" aria-labelledby="deck-title">
+<div class="deck-head"><h2 id="deck-title">Ereigniskarten</h2><span id="remaining"></span></div>
+<div id="deck-list" class="deck-list"></div>
+</aside>
+</div>
+</section>
+
+<section id="finish" hidden aria-labelledby="finish-title">
+<article id="capture">
+<p class="kicker">GW 9 · Mission 2 · Sicherung</p>
+<h1 id="finish-title" tabindex="-1">Ein Krieg an vielen Fronten</h1>
+<p class="lead">Wie entwickelte sich der Erste Weltkrieg?</p>
+<div id="result"></div>
+</article>
+<div class="after">
+<div>Alle Karten sind richtig zugeordnet. Sichere die Übersicht per Screenshot in GoodNotes.</div>
+<button id="questions-open" type="button">Fragen für GoodNotes</button>
+<button id="restart" type="button">Neu starten</button>
+</div>
+</section>
+
+<dialog id="info" aria-labelledby="info-title">
+<header><h2 id="info-title">Informationstexte</h2><form method="dialog"><button>Schließen</button></form></header>
+<details><summary>1914 – Der schnelle Sieg bleibt aus</summary><p>Die deutsche Heeresleitung wollte Frankreich innerhalb weniger Wochen besiegen. Anschließend sollten deutsche Truppen im Osten gegen Russland kämpfen. Deshalb marschierte die deutsche Armee durch das neutrale Belgien nach Frankreich.</p><p>Der deutsche Vormarsch wurde jedoch im September 1914 an der Marne gestoppt. An der Westfront gruben sich die gegnerischen Soldaten ein. Aus dem Bewegungskrieg entwickelte sich ein Stellungskrieg, bei dem sich die Frontlinien kaum noch verschoben.</p><p>Gleichzeitig kämpften Deutschland und Österreich-Ungarn an der Ostfront gegen Russland. Deutschland errang dort erste militärische Erfolge, doch Russland war nicht besiegt.</p></details>
+<details><summary>1915/16 – Der Krieg dauert an</summary><p>An der Westfront versuchten beide Seiten weiterhin, die gegnerischen Stellungen zu durchbrechen. Dabei kamen große Mengen an Waffen und Munition zum Einsatz. Die Kämpfe entwickelten sich zu langwierigen Materialschlachten mit enormen Verlusten, ohne dass eine Seite einen entscheidenden Durchbruch erzielen konnte.</p><p>Besonders verlustreich war 1916 die Schlacht von Verdun zwischen deutschen und französischen Truppen. Trotz monatelanger Kämpfe gelang keiner Seite der entscheidende Durchbruch.</p><p>Auch an der Ostfront wurde weitergekämpft. Anders als im Westen kam es dort häufiger zu größeren Frontverschiebungen. Zeitweise kämpften die Armeen allerdings auch an der Ostfront im Stellungskrieg. Russland erlitt schwere Verluste, blieb aber zunächst im Krieg.</p></details>
+<details><summary>1917 – Zwei Entwicklungen verändern den Krieg</summary><p>Die USA waren bis dahin neutral geblieben. Der erneute uneingeschränkte U-Boot-Krieg Deutschlands verschärfte den Konflikt mit den USA erheblich. Im April 1917 traten die USA aufseiten der Alliierten in den Krieg ein. Die USA unterstützten die Alliierten mit zusätzlichen Soldaten, Waffen und anderen wichtigen Gütern. Dadurch wurden die Alliierten im weiteren Kriegsverlauf stärker.</p><p>In Russland führten Krieg, Hunger und Unzufriedenheit zu Revolutionen. Die neue bolschewistische Regierung wollte den Krieg beenden und begann Friedensverhandlungen mit Deutschland und seinen Verbündeten.</p></details>
+<details><summary>1918 – Die Entscheidung fällt im Westen</summary><p>Im März 1918 schied Russland durch den Frieden von Brest-Litowsk aus dem Krieg aus. Deutschland konnte deshalb Truppen von der Ostfront an die Westfront verlegen.</p><p>Mit diesen zusätzlichen Soldaten begann die deutsche Armee im Frühjahr 1918 eine große Offensive im Westen und erzielte zunächst Geländegewinne. Der entscheidende Durchbruch gelang jedoch nicht. Anschließend drängten die Alliierten die deutschen Truppen zurück. Am 11. November 1918 endeten die Kämpfe durch einen Waffenstillstand.</p></details>
+</dialog>
+
+<dialog id="questions" aria-labelledby="questions-title">
+<header><h2 id="questions-title">Schriftliche Sicherung in GoodNotes</h2><form method="dialog"><button>Schließen</button></form></header>
+<p>a) „Beschreibe, wie sich der Krieg an der Westfront 1914 entwickelte.“<br>Erwarteter Umfang: 2–3 Sätze.</p>
+<p>b) „Beschreibe einen wichtigen Unterschied zwischen den Kämpfen an der Westfront und an der Ostfront.“<br>Erwarteter Umfang: 1–2 Sätze.</p>
+<p>c) „Erkläre, wie sich die militärische Lage durch den Kriegseintritt der USA und den Kriegsaustritt Russlands veränderte.“<br>Erwarteter Umfang: 2–3 Sätze.</p>
+</dialog>
+</main>
+<script>
+'use strict';
+const events = [
+  {
+    "text": "Deutsche Truppen marschieren durch Belgien nach Frankreich.",
+    "target": 0
+  },
+  {
+    "text": "Der deutsche Vormarsch wird gestoppt. Im Westen entsteht ein Stellungskrieg.",
+    "target": 0
+  },
+  {
+    "text": "Deutschland und Österreich-Ungarn kämpfen gegen Russland.",
+    "target": 1
+  },
+  {
+    "text": "Die Kämpfe an der Westfront entwickeln sich zu langwierigen, verlustreichen Materialschlachten.",
+    "target": 3
+  },
+  {
+    "text": "Die Schlacht von Verdun bringt keinen entscheidenden Durchbruch.",
+    "target": 3
+  },
+  {
+    "text": "An der Ostfront kommt es häufiger als im Westen zu größeren Frontverschiebungen. Zeitweise kämpfen die Armeen aber auch dort im Stellungskrieg.",
+    "target": 4
+  },
+  {
+    "text": "Die USA treten aufseiten der Gegner Deutschlands in den Krieg ein.",
+    "target": 8
+  },
+  {
+    "text": "Revolutionen erschüttern Russland. Die neue Regierung strebt Frieden an.",
+    "target": 7
+  },
+  {
+    "text": "Russland scheidet aus dem Krieg aus. Deutsche Truppen werden nach Westen verlegt.",
+    "target": 10
+  },
+  {
+    "text": "Eine große deutsche Offensive scheitert. Die Alliierten drängen die deutschen Truppen zurück.",
+    "target": 9
+  }
+];
+const periods = ['1914', '1915/16', '1917', '1918'];
+const fronts = ['Westfront', 'Ostfront', 'Weitere Entwicklungen'];
+const $ = id => document.getElementById(id);
+const placements = new Map();
+let order = [];
+let selected = null;
+let errors = new Set();
+let feedback = '';
+
+function shuffle(ids) {
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+  return ids;
+}
+
+function matrix(complete) {
+  const table = document.createElement('table');
+  table.className = 'board';
+  table.setAttribute('aria-label', complete ? 'Richtig zugeordnete Ereignisse' : 'Zuordnungsübersicht');
+  table.innerHTML = '<thead><tr><th class="period" scope="col">Zeitraum</th>' +
+    fronts.map(front => '<th scope="col">' + front + '</th>').join('') + '</tr></thead>';
+  const body = table.createTBody();
+  periods.forEach((period, row) => {
+    const tr = body.insertRow();
+    tr.innerHTML = '<th scope="row">' + period + '</th>';
+    fronts.forEach((front, column) => {
+      const key = row * fronts.length + column;
+      const cell = tr.insertCell();
+      if (complete) {
+        const ids = [...placements.keys()].filter(id => placements.get(id) === key).sort((a, b) => a - b);
+        for (const id of ids) {
+          const paragraph = document.createElement('p');
+          paragraph.className = 'result-card';
+          paragraph.textContent = events[id].text;
+          cell.append(paragraph);
+        }
+        if (!ids.length) cell.innerHTML = '<span class="empty" aria-label="Keine Karte">–</span>';
+        return;
+      }
+      const target = document.createElement('button');
+      target.type = 'button';
+      target.className = 'target';
+      target.textContent = 'Hier ablegen';
+      target.setAttribute('aria-label', period + ' · ' + front + ' · Hier ablegen');
+      target.dataset.target = key;
+      target.addEventListener('click', () => place(key));
+      const cards = document.createElement('div');
+      cards.className = 'cards';
+      cards.id = 'cell-' + key;
+      cell.append(target, cards);
+    });
+  });
+  return table;
+}
+
+function card(id) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'card';
+  button.dataset.card = id;
+  button.setAttribute('aria-pressed', String(selected === id));
+  if (errors.has(id)) {
+    button.classList.add('wrong');
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    badge.textContent = 'Zuordnung korrigieren';
+    button.append(badge);
+  }
+  button.append(document.createTextNode(events[id].text));
+  button.addEventListener('click', () => {
+    selected = selected === id ? null : id;
+    updateControls();
+  });
+  return button;
+}
+
+function updateControls() {
+  document.querySelectorAll('.card').forEach(button => {
+    button.setAttribute('aria-pressed', String(Number(button.dataset.card) === selected));
+  });
+  document.querySelectorAll('.target').forEach(button => { button.disabled = selected === null; });
+  $('check').disabled = placements.size !== events.length;
+  const instruction = selected !== null ? 'Karte ausgewählt. Tippe auf ein Zielfeld.' :
+    placements.size === events.length ? 'Tippe auf „Überprüfen“ oder wähle eine Karte zum Verschieben.' :
+      'Tippe eine Karte an und dann das passende Feld.';
+  $('status').textContent = placements.size + ' von ' + events.length + ' zugeordnet · ' + (feedback ? feedback + ' ' : '') + instruction;
+}
+
+function renderCards() {
+  const deck = $('deck-list');
+  const previousScroll = deck.scrollTop;
+  deck.replaceChildren();
+  document.querySelectorAll('.cards').forEach(cell => cell.replaceChildren());
+  for (const id of order) {
+    const parent = placements.has(id) ? $('cell-' + placements.get(id)) : deck;
+    parent.append(card(id));
+  }
+  if (placements.size === events.length) {
+    const note = document.createElement('p');
+    note.textContent = 'Alle Karten sind abgelegt. Zum Verschieben kannst du sie direkt in der Übersicht antippen.';
+    deck.append(note);
+  }
+  deck.scrollTop = previousScroll;
+  $('remaining').textContent = events.length - placements.size + ' offen';
+  updateControls();
+}
+
+function place(key) {
+  if (selected === null) return;
+  const id = selected;
+  if (placements.get(id) !== key) errors.delete(id);
+  placements.set(id, key);
+  selected = null;
+  feedback = errors.size ? 'Markierte Karten bitte verschieben.' : '';
+  renderCards();
+  const next = $('deck-list').querySelector('button') || $('check');
+  next.focus({preventScroll:true});
+}
+
+function check() {
+  if (placements.size !== events.length) return;
+  selected = null;
+  errors = new Set(order.filter(id => placements.get(id) !== events[id].target));
+  if (errors.size) {
+    feedback = errors.size === 1 ? 'Eine Karte ist falsch zugeordnet.' : errors.size + ' Karten sind falsch zugeordnet.';
+    renderCards();
+    const firstError = document.querySelector('.card.wrong');
+    firstError.scrollIntoView({block:'nearest'});
+    firstError.focus({preventScroll:true});
+    return;
+  }
+  $('result').replaceChildren(matrix(true));
+  $('work').hidden = true;
+  $('finish').hidden = false;
+  window.scrollTo(0, 0);
+  $('finish-title').focus({preventScroll:true});
+}
+
+function start() {
+  placements.clear();
+  errors.clear();
+  selected = null;
+  feedback = '';
+  order = shuffle(events.map((_, id) => id));
+  $('finish').hidden = true;
+  $('work').hidden = false;
+  $('board').replaceChildren(matrix(false));
+  renderCards();
+  window.scrollTo(0, 0);
+}
+
+$('check').addEventListener('click', check);
+$('restart').addEventListener('click', () => { start(); $('info-open').focus(); });
+$('info-open').addEventListener('click', () => $('info').showModal());
+$('questions-open').addEventListener('click', () => $('questions').showModal());
+start();
+</script>
+</body>
+</html>
